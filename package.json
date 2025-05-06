@@ -2,14 +2,18 @@
   "name": "you_tube",
   "version": "1.0.0",
   "description": "frist backend project on youtube",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/index.js"
   },
   "keywords": [
     "javascript",
     "backend"
   ],
   "author": "Deependra Swami",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
 }
