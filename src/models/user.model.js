@@ -6,7 +6,7 @@ import bcrypt from 'bcrypt'
 const userSchema = new Schema({
     username: {
         type: String,
-        required: [true, 'Username is required'],
+        required: true,
         unique: true,
         lowercase: true,
         trim: true,
@@ -14,19 +14,19 @@ const userSchema = new Schema({
     },
     email: {
         type: String,
-        required: [true, 'Email is required'],
+        required: true,
         unique: true,
         trim: true
     },
     fullname: {
         type: String,
-        required: [true, 'fullName is required'],
+        required: true,
         trim: true,
         index: true
     },
     avatar: {
         type: String, // cloudinary url
-        required: [true, 'Avatar is required']
+        required: true
 
     },
     coverImage: {
@@ -40,7 +40,7 @@ const userSchema = new Schema({
     ],
     password: {
         type: String,
-        required: [true, 'Password is required'],
+        required: true,
         unique: true,
         trim: true
     },
