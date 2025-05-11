@@ -1,3 +1,4 @@
+import { v2 as cloudinary } from "cloudinary";
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
@@ -207,7 +208,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body
-    const user = User.findById(req.user?._id)
+    const user = await User.findById(req.user?._id)
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
     if (!isPasswordCorrect) {
@@ -257,6 +258,14 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Avatar file is missing')
     }
 
+    // Delete old avatar image 
+    let existingUser = await User.findById(req.user?._id)
+    if (!existingUser) {
+        throw new ApiError(400, 'Error while delete old avatar image')
+    }
+    await cloudinary.uploader.destroy(existingUser.avatar_public_id)
+
+    // upload new avate
     const avatar = await uploadOnCloudinary(avatarLocalPath)
 
     if (!avatar.url) {
@@ -285,6 +294,14 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'coverImage file is missing')
     }
 
+    // delete old cover image
+    let existingUser = await User.findById(req.user?._id)
+    if (!existingUser) {
+        throw new ApiError(400, 'Error while delete old coverImage')
+    }
+    await cloudinary.uploader.destroy(existingUser.coverImage_public_id)
+
+
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
     if (!coverImage.url) {
@@ -304,6 +321,79 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(new ApiResponse(200, user, 'coverImage update successfully'))
+})
+
+
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+    const { username } = req.params
+    if (!username?.trim()) {
+        throw new ApiError(400, 'username is missing')
+    }
+
+    const channel = await User.aggregate([
+        {
+            $match: {
+                username: username?.toLowerCase()
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribedTo"
+            }
+        },
+        {
+            $addFields: {
+                subscribersCount: {
+                    $size: "$subscribers"
+                },
+                channelsSubscribedToCount: {
+                    $size: "$subscribedTo"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                fullname: 1,
+                username: 1,
+                subscribersCount: 1,
+                channelsSubscribedToCount: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                coverImage: 1,
+                email: 1
+            }
+        }
+    ])
+
+    console.log('inside aggrigationpipeline', channel)
+
+    if (!channel?.length) {
+        throw new ApiError(404, 'channel dose not exists')
+    }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, channel[0], 'user channel fetched successfully')
+        )
 })
 
 export {
