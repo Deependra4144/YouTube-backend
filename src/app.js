@@ -15,8 +15,10 @@ app.use(express.urlencoded({ extended: true, limit: '20kb' }))
 app.use(cookieParser())
 
 
+
 // routes
 import userRouter from './routes/user.routes.js'
+import { errorHandler } from './utils/errorHandler.js'
 
 
 // routes declaration
@@ -29,4 +31,5 @@ app.use('/api/v1/users', userRouter)
 // })
 
 // http://localhost:8000/api/v1/user/x...
+app.use(errorHandler)
 export { app }
